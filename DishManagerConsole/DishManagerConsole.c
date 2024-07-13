@@ -23,7 +23,6 @@ typedef struct ingredient {
     char name[35];
     struct ingredient* next;
     struct ingredient* previous;
-    struct dish* dishptr[INGPTR];
 } ing;
 
 //Code
@@ -150,18 +149,44 @@ ing* ingadd(ing* head, char name[]) {
     return head;
 }
 
-int remingindish(dsh* head, char name[]) {
-    dsh* help = head;
-    int i = 0, j = i;
-    while (help != NULL) {
-        if (help->dependencies[i] != NULL && strcmp(help->dependencies[i]->name, name) == 0) {
-            help->dependencies[i] == NULL;
-            for (j = i; j < DEPSIZE - 1 && help->dependencies[j] != NULL; j++) {
-                help->dependencies[j] = help->dependencies[j + 1];
-            }
-            help->dependencies[j + 1] = NULL;
+int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
+    dsh* dshhelp = dishsearch(dshhead, dshname);
+    ing* inghelp = ingsearch(inghead, ingname);
+    int i = 0;
+    if (inghelp == NULL) {
+        return EXIT_FAILURE;
+    }
+    else {
+        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != NULL; i++);
+        if (i < DEPSIZE && dshhelp->dependencies[i] == NULL) {
+            dshhelp->dependencies[i] = inghelp;
         }
-        help = help->next;
+        else {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int remingfromdish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
+    dsh* dshhelp = dishsearch(dshhead, dshname);
+    ing* inghelp = ingsearch(inghead, ingname);
+    int i = 0;
+    if (inghelp == NULL) {
+        return EXIT_FAILURE;
+    }
+    else {
+        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != inghelp; i++);
+        if (i < DEPSIZE && dshhelp->dependencies[i] == inghelp) {
+            dshhelp->dependencies[i] = NULL;
+            for (int j = i; j < DEPSIZE - 1; j++) {
+                dshhelp->dependencies[j] = dshhelp->dependencies[j + 1];
+            }
+            dshhelp->dependencies[DEPSIZE - 1] = NULL;
+        }
+        else {
+            return EXIT_FAILURE;
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -212,7 +237,7 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
     else {
         help = ingsearch(head, name);
         if (help == head) {
-            remingindish(dshhead, name);
+            //remingindish(dshhead, name);
             if (head->next != NULL) {
                 head = head->next;
                 head->previous = NULL;
@@ -227,7 +252,7 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
             }
         }
         else if (help != NULL) {
-            remingindish(dshhead, name);
+            //remingindish(dshhead, name);
             temp = help->previous;
             temp->next = help->next;
             if (help->next != NULL) {
@@ -244,104 +269,88 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
     return head;
 }
 
+int changedishrecipe(dsh* head, char name[]) {
+    return EXIT_SUCCESS;
+}
+
+dsh* changedishname(dsh* head, char oldname[], char newname[]) {
+    char receipt[RECEIPTLEN] = { 0 };
+    ing* dependencies[DEPSIZE] = { 0 };
+    dsh* help = dishsearch(head, oldname);
+    for (int i = 0; help->dependencies[i] != NULL && i < DEPSIZE; i++) {
+        dependencies[i] = help->dependencies[i];
+    }
+    strcpy(receipt, help->receipt);
+    head = dishrem(head, oldname);
+    head = dishadd(head, newname);
+    help = dishsearch(head, newname);
+    for (int i = 0; dependencies[i] != NULL && i < DEPSIZE; i++) {
+        help->dependencies[i] = dependencies[i];
+    }
+    strcpy(help->receipt, receipt);
+    return head;
+}
+
 dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     dsh* help = dishhead;
     ing* inghelp = inghead;
-    ing* dependencies[DEPSIZE] = {0};
-    int choice1, choice2, i, j, k, l;
+    ing* dependencies[DEPSIZE] = { 0 };
+    int choice, check, status = 1;
     char newname[NAMELEN], receipt[RECEIPTLEN], ingname[NAMELEN];
 
     help = dishsearch(dishhead, name);
+
+
     if (help == NULL) {
         printf("Es wurde kein Gericht mit diesem Namen gefunden!\n");
+        status = 0;
     }
     else {
-        printf("Welche Operation moechten Sie ausfuehren:\n");
-        printf("1) Namen aendern\n2) Rezept aendern\n3) Zutat hinzufuegen\n4) Zutat entfernen\n");
-        scanf("%d", &choice1);
-        switch (choice1)
-        {
-        case 1:
-            printf("Geben Sie den neuen Namen ein: ");
-            scanf("%s", newname);
-            for (int i = 0; help->dependencies[i] != NULL && i < DEPSIZE; i++) {
-                dependencies[i] = help->dependencies[i];
-            }
-            strcpy(receipt, help->receipt);
-            dishhead = dishrem(dishhead, name);
-            dishhead = dishadd(dishhead, newname);
-            help = dishsearch(dishhead, newname);
-            for (int i = 0; dependencies[i] != NULL && i < DEPSIZE; i++) {
-                help->dependencies[i] = dependencies[i];
-            }
-            strcpy(help->receipt, receipt);
-            break;
+        while (status) {
+            printf("Welche Operation moechten Sie ausfuehren:\n");
+            printf("1) Namen aendern\n2) Rezept aendern\n3) Zutat hinzufuegen\n4) Zutat entfernen\n5) Abbrechen\n");
+            scanf("%d", &choice);
+            switch (choice)
+            {
+            case 1:
+                printf("Geben Sie den neuen Namen ein: ");
+                scanf("%s", newname);
+                dishhead = changedishname(dishhead, name, newname); status = 0;
+            case 2:
+                printf("Diese Funktion wird noch nicht unterstuetzt, wir arbeiten daran, auch dies zu ermoeglichen.\n"); status = 0;
+                break;
 
-        case 2:
-            printf("Diese Funktion wird noch nicht unterstuetzt, wir arbeiten daran, auch dies zu ermoeglichen.\n");
-            break;
+            case 3:
+                printf("Geben Sie den Name der Zutat ein: ");
+                scanf("%s", ingname);
+                check = addingtodish(dishhead, inghead, name, ingname);
+                if (check == 0) {
+                    printf("%s erfolgreich hunzugefuegt.\n", ingname);
+                    status = 0;
+                }
+                else printf("%s konnte nicht hinzugefuegt werden. Kontrollieren Sie, ob es diese Zutat ueberhaupt gibt.\n", ingname);
+                break;
 
-        case 3:
-            printf("Geben Sie den Name der Zutat ein: ");
-            scanf("%s", ingname);
-            inghelp = ingsearch(inghead, ingname);
-            if (inghelp == NULL) {
-                printf("Es wurde keine Zutat mit diesem Namen gefunden!\n");
-            }
-            else {
-                for (i = 0; i < DEPSIZE && help->dependencies[i] != NULL; i++);
-                if (i < DEPSIZE && help->dependencies[i] == NULL) {
-                    help->dependencies[i] = inghelp;
-                    for (j = 0; j < INGPTR && inghelp->dishptr[j] != NULL; j++);
-                    if (j < INGPTR && inghelp->dishptr[j] == NULL) {
-                        inghelp->dishptr[j] = help;
-                        printf("%s wurde erfolgreich zu %s hinzugefuegt.\n", inghelp->name, help->name);
-                        printf("%d %d\n", help, inghelp->dishptr[j]);
-                    }
-                    else {
-                        printf("Die maximale Anzahl an Gerichten, die diese Zutat besitzen, ist erreicht worden, loeschen Sie zuerst diese Zutat aus einem Gericht.\n");
-                    }
+            case 4:
+                printf("Geben Sie den Name der Zutat ein: ");
+                scanf("%s", ingname);
+                inghelp = ingsearch(inghead, ingname);
+                check = remingfromdish(dishhead, inghead, name, ingname);
+                if (check == 0) {
+                    printf("%s erfolgreich entfernt.\n", ingname);
+                    status = 0;
                 }
-                else {
-                    printf("Die maximale Anzahl an Zutaten ist erreicht worden, loeschen Sie zuerst eine andere Zutat, um eine neue hinzuzufuegen.\n");
-                }
-            }
-            break;
+                else printf("%s konnte nicht entfernt werden. Kontrollieren Sie, ob das Gericht mit dieser Zutat schon verbunden ist, oder, ob es diese Zutat ueberhaupt gibt.\n", ingname);
+                break;
 
-        case 4:
-            printf("Geben Sie den Name der Zutat ein: ");
-            scanf("%s", ingname);
-            inghelp = ingsearch(inghead, ingname);
-            if (inghelp == NULL) {
-                printf("Es wurde keine Zutat mit diesem Namen gefunden!\n");
-            }
-            else {
-                for (i = 0; i < DEPSIZE && help->dependencies[i] != inghelp; i++);
-                if (i < DEPSIZE && help->dependencies[i] == inghelp) {
-                    help->dependencies[i] = NULL;
-                    for (int j = i; j < DEPSIZE - 1; j++) {
-                        help->dependencies[j] = help->dependencies[j + 1];
-                    }
-                    for (k = 0; k < INGPTR && inghelp->dishptr[k] != help; k++);
-                    if (k < INGPTR && inghelp->dishptr[k] == help) {
-                        inghelp->dishptr[k] = NULL;
-                        for (int l = k; l < INGPTR - 1; l++) {
-                            inghelp->dishptr[k] = inghelp->dishptr[l + 1];
-                        }
-                    }
-                    help->dependencies[DEPSIZE - 1] = NULL;
-                    inghelp->dishptr[INGPTR - 1] = NULL;
-                }
-                else {
-                    printf("Dieses Gericht besitzt keine Zutat mit diesem Namen\n");
-                }
-            }
-            break;
+            case 5:
+                status = 0;
+                break;
 
-        default:
-            printf("Unbekannte Eingabe!\n");
-            printf("Beende Operation\n");
-            break;
+            default:
+                printf("Unbekannte Eingabe!\n");
+                break;
+            }
         }
     }
     return dishhead;
@@ -354,11 +363,20 @@ void debug(dsh* head) {
         printf("Name: %s (%d), Next: %d, Previous: %d Dependencies: ", help->name, help, help->next, help->previous);
         for (int i = 0; i < DEPSIZE && help->dependencies[i] != NULL; i++) {
             printf("%s ", help->dependencies[i]->name);
-            for (j = 0; j < INGPTR && help->dependencies[i]->dishptr[j] != help; j++);
-            printf("(DishPointer: %d),", help->dependencies[i]->dishptr[j]);
         }
         printf("\n");
     }
+}
+
+void ingdebug(ing* head) {
+    ing* help = head;
+    int i = 1;
+    while (help != NULL) {
+        printf("Name: %s (%d) Next: %d Previous: %d\n", help->name, help, help->next, help->previous);
+        help = help->next;
+        i++;
+    }
+    return;
 }
 
 void** read_file(char path[], dsh* dishhead, ing* inghead) {
@@ -492,7 +510,7 @@ int main() {
             break;
 
         case 11:
-            debug(dshhead);
+            ingdebug(inghead);
             /*arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
