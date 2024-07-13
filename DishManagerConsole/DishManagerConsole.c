@@ -149,48 +149,6 @@ ing* ingadd(ing* head, char name[]) {
     return head;
 }
 
-int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
-    dsh* dshhelp = dishsearch(dshhead, dshname);
-    ing* inghelp = ingsearch(inghead, ingname);
-    int i = 0;
-    if (inghelp == NULL) {
-        return EXIT_FAILURE;
-    }
-    else {
-        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != NULL; i++);
-        if (i < DEPSIZE && dshhelp->dependencies[i] == NULL) {
-            dshhelp->dependencies[i] = inghelp;
-        }
-        else {
-            return EXIT_FAILURE;
-        }
-    }
-    return EXIT_SUCCESS;
-}
-
-int remingfromdish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
-    dsh* dshhelp = dishsearch(dshhead, dshname);
-    ing* inghelp = ingsearch(inghead, ingname);
-    int i = 0;
-    if (inghelp == NULL) {
-        return EXIT_FAILURE;
-    }
-    else {
-        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != inghelp; i++);
-        if (i < DEPSIZE && dshhelp->dependencies[i] == inghelp) {
-            dshhelp->dependencies[i] = NULL;
-            for (int j = i; j < DEPSIZE - 1; j++) {
-                dshhelp->dependencies[j] = dshhelp->dependencies[j + 1];
-            }
-            dshhelp->dependencies[DEPSIZE - 1] = NULL;
-        }
-        else {
-            return EXIT_FAILURE;
-        }
-    }
-    return EXIT_SUCCESS;
-}
-
 dsh* dishrem(dsh* head, char name[]) {
     dsh* help = NULL, * temp = NULL;
     if (head == NULL) {
@@ -269,6 +227,57 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
     return head;
 }
 
+int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
+    dsh* dshhelp = dishsearch(dshhead, dshname);
+    ing* inghelp = ingsearch(inghead, ingname);
+    int i = 0;
+    if (inghelp == NULL) {
+        return EXIT_FAILURE;
+    }
+    else {
+        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != NULL; i++);
+        if (i < DEPSIZE && dshhelp->dependencies[i] == NULL) {
+            dshhelp->dependencies[i] = inghelp;
+        }
+        else {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int remingfromdish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
+    dsh* dshhelp = dishsearch(dshhead, dshname);
+    ing* inghelp = ingsearch(inghead, ingname);
+    int i = 0;
+    if (inghelp == NULL) {
+        return EXIT_FAILURE;
+    }
+    else {
+        for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != inghelp; i++);
+        if (i < DEPSIZE && dshhelp->dependencies[i] == inghelp) {
+            dshhelp->dependencies[i] = NULL;
+            for (int j = i; j < DEPSIZE - 1; j++) {
+                dshhelp->dependencies[j] = dshhelp->dependencies[j + 1];
+            }
+            dshhelp->dependencies[DEPSIZE - 1] = NULL;
+        }
+        else {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int addrecipetodish(dsh* head, char name[NAMELEN], char recipe[RECEIPTLEN]) {
+    dsh* help = dishsearch(head, name);
+    if (help != NULL) {
+        strcpy(help->receipt, recipe);
+        return EXIT_SUCCESS;
+    }
+    else return EXIT_FAILURE;
+}
+
 int changedishrecipe(dsh* head, char name[]) {
     return EXIT_SUCCESS;
 }
@@ -299,7 +308,6 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     char newname[NAMELEN], receipt[RECEIPTLEN], ingname[NAMELEN];
 
     help = dishsearch(dishhead, name);
-
 
     if (help == NULL) {
         printf("Es wurde kein Gericht mit diesem Namen gefunden!\n");
@@ -356,6 +364,62 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     return dishhead;
 }
 
+void** read_file(char path[], dsh* dishhead, ing* inghead) {
+    FILE* file = fopen(path, "r");
+    if (!file) {
+        perror("Failed to open file");
+        return NULL;
+    }
+
+    char name[NAMELEN] = "";
+    char option[NAMELEN] = "";
+    char temp[NAMELEN] = "";
+    while ((fscanf(file, "%s %s\n", option, name)) == 2) {
+        if (strcmp(option, "I_Name") == 0) {
+            inghead = ingadd(inghead, name);
+        }
+        else if (strcmp(option, "D_Name") == 0) {
+            dishhead = dishadd(dishhead, name);
+            strcpy(temp, name);
+        }
+        else if (strcmp(option, "D_Dependency") == 0) {
+            addingtodish(dishhead, inghead, temp, name);
+        }
+        else if (strcmp(option, "D_Recipe") == 0) {
+            //Make another file wherein the recipes are stored and do not use this function.
+        }
+    }
+
+    static void* arr[2];
+    arr[0] = dishhead;
+    arr[1] = inghead;
+    fclose(file);
+    return arr;
+}
+
+int read_recipes(char path[], dsh* dishead) {
+    FILE* file = fopen(path, "r");
+    if (!file) {
+        perror("Failed to open file");
+        return EXIT_FAILURE;
+    }
+
+    int retval;
+    dsh* dish;
+    char name[NAMELEN] = "";
+    char recipe[RECEIPTLEN] = "";
+    while ((fscanf(file, "%s %s\n", name, recipe)) == 2) {
+        dish = dishsearch(dishead, name);
+        if (dish != NULL) {
+            strcpy(dish->receipt, recipe);
+        }
+        else {
+            retval = 1;
+        }
+    }
+    return retval;
+}
+
 void debug(dsh* head) {
     dsh* help;
     int j = 0;
@@ -377,38 +441,6 @@ void ingdebug(ing* head) {
         i++;
     }
     return;
-}
-
-void** read_file(char path[], dsh* dishhead, ing* inghead) {
-    FILE* file = fopen("C:\\Users\\GabrielM\\Test\\DishManagerCOnsole\\Data.txt", "r");
-    if (!file) {
-        perror("Failed to open file");
-        return NULL;
-    }
-
-    int check = 0;
-    char name[NAMELEN] = "";
-    char option[NAMELEN] = "";
-    while ((check = fscanf(file, "%s %s\n", option, name)) == 2) {
-        if (strcmp(option, "I_Name") == 0) {
-            inghead = ingadd(inghead, name);
-        }
-        else if (strcmp(option, "D_Name") == 0) {
-            dishhead = dishadd(dishhead, name);
-        }
-        else if (strcmp(option, "D_Dependency") == 0) {
-            //Add code
-        }
-        else if (strcmp(option, "D_Recipe") == 0) {
-            //Add code
-        }
-    }
-
-    static void* arr[2];
-    arr[0] = dishhead;
-    arr[1] = inghead;
-    fclose(file);
-    return arr;
 }
 
 int main() {
@@ -510,11 +542,10 @@ int main() {
             break;
 
         case 11:
-            ingdebug(inghead);
-            /*arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
+            arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
-            printf("%s %s\n", dshhead->name, inghead->name);*/
+            printf("%s %s\n", dshhead->name, inghead->name);
             break;
 
         default:
