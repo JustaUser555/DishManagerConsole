@@ -247,7 +247,7 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
 dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     dsh* help = dishhead;
     ing* inghelp = inghead;
-    ing* dependencies[DEPSIZE];
+    ing* dependencies[DEPSIZE] = {0};
     int choice1, choice2, i, j, k, l;
     char newname[NAMELEN], receipt[RECEIPTLEN], ingname[NAMELEN];
 
@@ -492,10 +492,11 @@ int main() {
             break;
 
         case 11:
-            arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
+            debug(dshhead);
+            /*arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
-            printf("%s %s\n", dshhead->name, inghead->name);
+            printf("%s %s\n", dshhead->name, inghead->name);*/
             break;
 
         default:
