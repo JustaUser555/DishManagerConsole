@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <direct.h>
 
 #define INGPTR 2000
 #define DEPSIZE 50
@@ -367,7 +368,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
 void** read_file(char path[], dsh* dishhead, ing* inghead) {
     FILE* file = fopen(path, "r");
     if (!file) {
-        perror("Failed to open file");
+        perror("Fehler beim Oeffnen der Datei");
         return NULL;
     }
 
@@ -400,7 +401,7 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
 int read_recipes(char path[], dsh* dishead) {
     FILE* file = fopen(path, "r");
     if (!file) {
-        perror("Failed to open file");
+        perror("Fehler beim Oeffnen der Datei");
         return EXIT_FAILURE;
     }
 
@@ -414,10 +415,54 @@ int read_recipes(char path[], dsh* dishead) {
             strcpy(dish->receipt, recipe);
         }
         else {
-            retval = 1;
+            retval = -1;
         }
     }
     return retval;
+}
+
+int fileOrDirectoryExists(const char* path) {
+    return _access(path, 0) != -1;
+}
+
+int check_for_files(char path[]) {
+    char folderName[] = "data";
+    char filePath1[100] = "";
+    char filePath2[100] = "";
+
+    if (!fileOrDirectoryExists(folderName)) {
+        if (_mkdir(folderName) == -1) {
+            perror("Fehler beim Erstellen des Daten-Ordners");
+            printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
+            return EXIT_FAILURE;
+        }
+        printf("Directory '%s' created successfully.\n", folderName);
+    }
+
+    snprintf(filePath1, sizeof(filePath1), "%s\\dishes_and_ingredients.txt", folderName);
+    snprintf(filePath2, sizeof(filePath2), "%s\\recipes.txt", folderName);
+
+    if (!fileOrDirectoryExists(filePath1)) {
+        FILE* file1 = fopen(filePath1, "w");
+        if (file1 == NULL) {
+            perror("Error creating file1.txt");
+            return EXIT_FAILURE;
+        }
+        fclose(file1);
+        printf("File '%s' created successfully.\n", filePath1);
+    }
+
+    if (!fileOrDirectoryExists(filePath2)) {
+        FILE* file2 = fopen(filePath2, "w");
+        if (file2 == NULL) {
+            perror("Fehler beim Erstell");
+            return EXIT_FAILURE;
+        }
+        fclose(file2);
+        printf("File '%s' created successfully.\n", filePath2);
+    }
+
+    return EXIT_SUCCESS;
 }
 
 void debug(dsh* head) {
@@ -447,13 +492,23 @@ int main() {
     int status = 1;
     int choice;
     int inp, inp2;
+    int check;
     char cinp[NAMELEN], cinp2[NAMELEN];
+    char path[MAXLINELENGTH];
     dsh* dshhead = NULL;
     dsh* dshhelp = NULL;
     ing* inghead = NULL;
     ing* inghelp = NULL;
     void** arr;
     printf("Willkommen zum Essensmanager!\n");
+    if (!_getcwd(path, sizeof(path))) {
+        perror("Fehler beim Auslesen des Pfades.");
+        printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
+    }
+    else {
+        if (check_for_files(path) == 1) printf("Beende Programm.\n");
+        else printf("Der Daten-Ordner wurde erfolgreich erstellt.\n");
+    }
 
     while (status == 1) {
         dshhelp = NULL;
@@ -542,7 +597,7 @@ int main() {
             break;
 
         case 11:
-            arr = read_file("C:/Users/GabrielM/Test/DishManagerCOnsole/Data.txt", dshhead, inghead);
+            arr = read_file(path, dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
             printf("%s %s\n", dshhead->name, inghead->name);
