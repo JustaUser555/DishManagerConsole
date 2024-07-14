@@ -386,9 +386,6 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
         else if (strcmp(option, "D_Dependency") == 0) {
             addingtodish(dishhead, inghead, temp, name);
         }
-        else if (strcmp(option, "D_Recipe") == 0) {
-            //Make another file wherein the recipes are stored and do not use this function.
-        }
     }
 
     static void* arr[2];
