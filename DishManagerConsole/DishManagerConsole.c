@@ -386,9 +386,6 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
         else if (strcmp(option, "D_Dependency") == 0) {
             addingtodish(dishhead, inghead, temp, name);
         }
-        else if (strcmp(option, "D_Recipe") == 0) {
-            //Make another file wherein the recipes are stored and do not use this function.
-        }
     }
 
     static void* arr[2];
@@ -402,10 +399,11 @@ int read_recipes(char path[], dsh* dishead) {
     FILE* file = fopen(path, "r");
     if (!file) {
         perror("Fehler beim Oeffnen der Datei");
+        printf("Es konnten keine Rezepte ausgelesen werden.\n");
         return EXIT_FAILURE;
     }
 
-    int retval;
+    int retval = 0;
     dsh* dish;
     char name[NAMELEN] = "";
     char recipe[RECEIPTLEN] = "";
@@ -416,6 +414,7 @@ int read_recipes(char path[], dsh* dishead) {
         }
         else {
             retval = -1;
+            printf("Die Rezepte-Datei konnte zwar geoeffnet werden, aber es gab ein Problem beim Auslesen der Datei-Inhalte. Moeglicherweise sind nicht alle ihre Rezepte in die Liste aufgenommen worden.\n");
         }
     }
     return retval;
@@ -425,44 +424,43 @@ int fileOrDirectoryExists(const char* path) {
     return _access(path, 0) != -1;
 }
 
-int check_for_files(char path[]) {
+char** check_for_files(void) {
     char folderName[] = "data";
-    char filePath1[100] = "";
-    char filePath2[100] = "";
+    char static filePaths[2][100] = { 0 };
 
     if (!fileOrDirectoryExists(folderName)) {
         if (_mkdir(folderName) == -1) {
             perror("Fehler beim Erstellen des Daten-Ordners");
             printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
-            return EXIT_FAILURE;
+            return NULL;
         }
-        printf("Directory '%s' created successfully.\n", folderName);
+        printf("Der Daten-Ordner '%s' wurde erfolgreich erstellt.\n", folderName);
     }
 
-    snprintf(filePath1, sizeof(filePath1), "%s\\dishes_and_ingredients.txt", folderName);
-    snprintf(filePath2, sizeof(filePath2), "%s\\recipes.txt", folderName);
+    snprintf(filePaths[0], sizeof(filePaths[0]), "%s\\dishes_and_ingredients.txt", folderName);
+    snprintf(filePaths[1], sizeof(filePaths[1]), "%s\\recipes.txt", folderName);
 
-    if (!fileOrDirectoryExists(filePath1)) {
-        FILE* file1 = fopen(filePath1, "w");
+    if (!fileOrDirectoryExists(filePaths[0])) {
+        FILE* file1 = fopen(filePaths[0], "w");
         if (file1 == NULL) {
-            perror("Error creating file1.txt");
-            return EXIT_FAILURE;
+            perror("Fehler beim Erstellen einer Datei.");
+            return NULL;
         }
         fclose(file1);
-        printf("File '%s' created successfully.\n", filePath1);
+        printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[0]);
     }
 
-    if (!fileOrDirectoryExists(filePath2)) {
-        FILE* file2 = fopen(filePath2, "w");
+    if (!fileOrDirectoryExists(filePaths[1])) {
+        FILE* file2 = fopen(filePaths[1], "w");
         if (file2 == NULL) {
-            perror("Fehler beim Erstell");
-            return EXIT_FAILURE;
+            perror("Fehler beim Erstellen einer Datei.");
+            return NULL;
         }
         fclose(file2);
-        printf("File '%s' created successfully.\n", filePath2);
+        printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[1]);
     }
 
-    return EXIT_SUCCESS;
+    return filePaths;
 }
 
 void debug(dsh* head) {
@@ -495,6 +493,7 @@ int main() {
     int check;
     char cinp[NAMELEN], cinp2[NAMELEN];
     char path[MAXLINELENGTH];
+    char** filePaths;
     dsh* dshhead = NULL;
     dsh* dshhelp = NULL;
     ing* inghead = NULL;
@@ -506,8 +505,13 @@ int main() {
         printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
     }
     else {
-        if (check_for_files(path) == 1) printf("Beende Programm.\n");
-        else printf("Der Daten-Ordner wurde erfolgreich erstellt.\n");
+        filePaths = check_for_files();
+        if (filePaths) {
+            arr = read_file(filePaths[0], dshhead, inghead);
+            dshhead = (dsh*)arr[0];
+            inghead = (ing*)arr[1];
+        }
+        else printf("Beende Programm.\n");
     }
 
     while (status == 1) {
