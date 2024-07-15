@@ -23,7 +23,6 @@ typedef struct dish {
     char name[NAMELEN];
     char receipt[RECEIPTLEN];
     struct ingredient* dependencies[DEPSIZE];
-    int depcount[DEPSIZE];
     struct dish* next;
     struct dish* previous;
 } dsh;
@@ -35,6 +34,15 @@ typedef struct ingredient {
 } ing;
 
 //Code
+
+void initializeItem(dsh* dish, ing* ingredient) {
+    memset(dish, 0, sizeof(dish));
+    memset(ingredient, 0, sizeof(ingredient));
+}
+
+int isStringEmpty(const char* str) {
+    return str[0] == '\0';
+}
 
 void dishout(dsh* head) {
     dsh* help = head;
@@ -426,6 +434,51 @@ int read_recipes(char path[], dsh* dishead) {
         }
     }
     return retval;
+}
+
+int write_file(char path[], dsh* dshhead, ing* inghead) {
+    dsh* dshhelp = dshhead;
+    ing* inghelp = inghead;
+    FILE* file = fopen(path, "w");
+    if (!file) {
+        perror("Fehler beim Oeffnen der Datei");
+        printf("Es konnten keine Gerichte und Zutaten gespeichert werden.\n");
+        return EXIT_FAILURE;
+    }
+    while (inghelp != NULL) {
+        fprintf(file, "I_Name %s\n", inghelp->name);
+        inghelp = inghelp->next;
+    }
+    while (dshhead != NULL) {
+        fprintf(file, "D_Name %s\n", dshhelp->name);
+        for (int i = 0; i < DEPSIZE; i++) {
+            if (dshhelp->dependencies[i] != NULL) {
+                fprintf(file, "D_Dependency %s\n", dshhelp->dependencies[i]->name);
+            }
+        }
+        dshhelp = dshhelp->next;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int write_recipes(char path[], dsh* dshhead) {
+    dsh* dshhelp = dshhead;
+
+    FILE* file = fopen(path, "w");
+    if (!file) {
+        perror("Fehler beim Oeffnen der Datei");
+        printf("Es konnten keine Rezepte gespeichert werden.\n");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+
+    while (dshhelp != NULL) {
+        if (!isStringEmpty(dshhelp->receipt) {
+            fprintf(file, "%s %s\n", dshhelp->name, dshhelp->receipt);
+        }
+        dshhelp = dshhelp->next;
+    }
 }
 
 int fileOrDirectoryExists(const char* path) {
