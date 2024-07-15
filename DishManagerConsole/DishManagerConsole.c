@@ -3,13 +3,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <direct.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #define INGPTR 2000
 #define DEPSIZE 50
 #define NAMELEN 50
 #define RECEIPTLEN 2000
 #define MAXLINELENGTH 1024
+
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#define MKDIR(path) mkdir(path, 0700)
+#endif
 
 typedef struct dish {
     char name[NAMELEN];
@@ -421,7 +429,8 @@ int read_recipes(char path[], dsh* dishead) {
 }
 
 int fileOrDirectoryExists(const char* path) {
-    return _access(path, 0) != -1;
+    struct stat buffer;
+    return (stat(path, &buffer) == 0);
 }
 
 char** check_for_files(void) {
@@ -429,7 +438,7 @@ char** check_for_files(void) {
     char static filePaths[2][100] = { 0 };
 
     if (!fileOrDirectoryExists(folderName)) {
-        if (_mkdir(folderName) == -1) {
+        if (MKDIR(folderName) == -1) {
             perror("Fehler beim Erstellen des Daten-Ordners");
             printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
             return NULL;
@@ -460,7 +469,7 @@ char** check_for_files(void) {
         printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[1]);
     }
 
-    return filePaths;
+    return (char**)filePaths;
 }
 
 void debug(dsh* head) {
