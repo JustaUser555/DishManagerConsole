@@ -206,9 +206,11 @@ dsh* dishrem(dsh* head, char name[]) {
 
 int ingremfromeverydish(dsh* dshhead, ing* ingredient){
 	dsh* dshhelp = dshhead;
+	int i = 0;
+	
 	while(dshhelp != NULL){
-		for (int i = 0; i < DEPSIZE && dshhelp->dependencies[i] != inghelp; i++);
-		if (i < DEPSIZE && dshhelp->dependencies[i] == inghelp) {
+		for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != ingredient; i++);
+		if (i < DEPSIZE && dshhelp->dependencies[i] == ingredient) {
 			dshhelp->dependencies[i] = NULL;
 			for (int j = i; j < DEPSIZE - 1; j++) {
 				dshhelp->dependencies[j] = dshhelp->dependencies[j + 1];
