@@ -358,9 +358,10 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
-                dishhead = changedishname(dishhead, name, newname); status = 0;
+                dishhead = changedishname(dishhead, name, newname);
+				status = 0;
             case 2:
-                printf("Diese Funktion wird noch nicht unterstuetzt, wir arbeiten daran, auch dies zu ermoeglichen.\n"); status = 0;
+                status = 0;
                 break;
 
             case 3:
@@ -465,16 +466,13 @@ int write_file(char path[], dsh* dshhead, ing* inghead) {
     }
     while (inghelp != NULL) {
         fprintf(file, "I_Name %s\n", inghelp->name);
-		printf("I_Name %s\n", inghelp->name);
         inghelp = inghelp->next;
     }
     while (dshhelp != NULL) {
         fprintf(file, "D_Name %s\n", dshhelp->name);
-		printf("D_Name %s\n", dshhelp->name);
         for (int i = 0; i < DEPSIZE; i++) {
             if (dshhelp->dependencies[i] != NULL) {
                 fprintf(file, "D_Dependency %s\n", dshhelp->dependencies[i]->name);
-				printf("D_Dependency %s\n", dshhelp->dependencies[i]->name);
             }
         }
         dshhelp = dshhelp->next;
@@ -569,6 +567,15 @@ void ingdebug(ing* head) {
     return;
 }
 
+void print_recipes(dsh* head){
+	dsh* help = head;
+    while (help != NULL) {
+        printf("Name: %s Recipe: %s\n", help->name, help->receipt);
+		help = help->next;
+    }
+	return;
+}
+
 int main() {
     int status = 1;
     int choice;
@@ -598,7 +605,7 @@ int main() {
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
 			read_recipes(filePaths[1], dshhead);
-        } 
+        }
     }
 
     while (status == 1) {
@@ -696,7 +703,7 @@ int main() {
             break;
 
         case 11:
-			debug(dshhead);
+			print_recipes(dshhead);
             break;
 
         default:
