@@ -53,7 +53,7 @@ void dishout(dsh* head) {
     for (help = head; help != NULL; help = help->next) {
         printf("%d: %s, Zutaten: ", i, help->name);
         if (help->dependencies[j] == NULL) {
-            printf("Keine Angabe");
+            printf("Keine Angabe ");
         }
         for (int j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
             printf("%s ", help->dependencies[j]->name);
