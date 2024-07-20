@@ -296,6 +296,16 @@ int addrecipetodish(dsh* head, char name[NAMELEN], char recipe[RECEIPTLEN]) {
 }
 
 int changedishrecipe(dsh* head, char name[]) {
+    dsh* help = dishsearch(head, name);
+    char recipe[RECEIPTLEN];
+
+    printf("Geben Sie das Rezept ein. Beachten Sie dabei, dass alle Leerstriche mit Unterstrichen ausgetauscht werden müssen!\n");
+    scanf("%s", recipe);
+
+    if (strcpy(help->receipt, recipe) == NULL) {
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -342,7 +352,13 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
                 scanf("%s", newname);
                 dishhead = changedishname(dishhead, name, newname); status = 0;
             case 2:
-                printf("Diese Funktion wird noch nicht unterstuetzt, wir arbeiten daran, auch dies zu ermoeglichen.\n"); status = 0;
+                if (changedishrecipe(dishhead, name) == EXIT_SUCCESS) {
+                    printf("Das Rezept wurde erfolgreich hinzugefügt.\n");
+                    status = 0;
+                }
+                else {
+                    printf("Das Rezept konnte nicht zur Zutat geschrieben werden.\n");
+                }
                 break;
 
             case 3:
