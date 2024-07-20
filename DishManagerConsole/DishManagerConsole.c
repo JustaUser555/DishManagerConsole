@@ -715,7 +715,11 @@ int main() {
 				if(strcmp("Y", cinp) == 0) printf("Beende Programm!\n");
 				else if(strcmp("N", cinp) == 0) status = 1;
 				else printf("Ungueltige Eingabe: Programm wird nicht beendet.\n");
-			} else printf("Beende Programm!\n");
+            }
+            else {
+                write_recipes(filePaths[1], dshhead);
+                printf("Beende Programm!\n");
+            }
             break;
 
         case 11:
