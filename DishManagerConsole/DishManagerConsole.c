@@ -58,8 +58,8 @@ void dishout(dsh* head) {
         for (int j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
             printf("%s ", help->dependencies[j]->name);
         }
+        printf("Rezept: %s\n", help->receipt);
         i++;
-        printf("\n");
     }
     return;
 }
@@ -506,7 +506,6 @@ int write_recipes(char path[], dsh* dshhead) {
         printf("Es konnten keine Rezepte gespeichert werden.\n");
         return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
 
     while (dshhelp != NULL) {
         if (!isStringEmpty(dshhelp->receipt)) {
@@ -514,6 +513,8 @@ int write_recipes(char path[], dsh* dshhead) {
         }
         dshhelp = dshhelp->next;
     }
+
+    return EXIT_SUCCESS;
 }
 
 int fileOrDirectoryExists(const char* path) {
@@ -637,7 +638,6 @@ int main() {
         printf("8)  Zutat loeschen\n");
         printf("9)  Zutat suchen\n");
         printf("10) Programm beenden\n");
-        printf("11) DEBUG\n");
 
         scanf("%d", &choice);
 
@@ -720,10 +720,6 @@ int main() {
                 write_recipes(filePaths[1], dshhead);
                 printf("Beende Programm!\n");
             }
-            break;
-
-        case 11:
-			print_recipes(dshhead);
             break;
 
         default:
