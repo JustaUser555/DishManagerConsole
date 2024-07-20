@@ -204,6 +204,24 @@ dsh* dishrem(dsh* head, char name[]) {
     return head;
 }
 
+int ingremfromeverydish(dsh* dshhead, ing* ingredient){
+	dsh* dshhelp = dshhead;
+	int i = 0;
+	
+	while(dshhelp != NULL){
+		for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != ingredient; i++);
+		if (i < DEPSIZE && dshhelp->dependencies[i] == ingredient) {
+			dshhelp->dependencies[i] = NULL;
+			for (int j = i; j < DEPSIZE - 1; j++) {
+				dshhelp->dependencies[j] = dshhelp->dependencies[j + 1];
+			}
+			dshhelp->dependencies[DEPSIZE - 1] = NULL;
+		}
+		dshhelp = dshhelp->next;
+	}
+	return EXIT_SUCCESS;
+}
+
 ing* ingrem(ing* head, char name[], dsh* dshhead) {
     ing* help = NULL, * temp = NULL;
     if (head == NULL) {
@@ -212,7 +230,7 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
     else {
         help = ingsearch(head, name);
         if (help == head) {
-            //remingindish(dshhead, name);
+            ingremfromeverydish(dshhead, help);
             if (head->next != NULL) {
                 head = head->next;
                 head->previous = NULL;
@@ -227,7 +245,7 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
             }
         }
         else if (help != NULL) {
-            //remingindish(dshhead, name);
+            ingremfromeverydish(dshhead, help);
             temp = help->previous;
             temp->next = help->next;
             if (help->next != NULL) {
@@ -350,7 +368,8 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
-                dishhead = changedishname(dishhead, name, newname); status = 0;
+                dishhead = changedishname(dishhead, name, newname);
+				status = 0;
             case 2:
                 if (changedishrecipe(dishhead, name) == EXIT_SUCCESS) {
                     printf("Das Rezept wurde erfolgreich hinzugefügt.\n");
@@ -419,7 +438,7 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
             addingtodish(dishhead, inghead, temp, name);
         }
     }
-
+	
     static void* arr[2];
     arr[0] = dishhead;
     arr[1] = inghead;
@@ -465,7 +484,7 @@ int write_file(char path[], dsh* dshhead, ing* inghead) {
         fprintf(file, "I_Name %s\n", inghelp->name);
         inghelp = inghelp->next;
     }
-    while (dshhead != NULL) {
+    while (dshhelp != NULL) {
         fprintf(file, "D_Name %s\n", dshhelp->name);
         for (int i = 0; i < DEPSIZE; i++) {
             if (dshhelp->dependencies[i] != NULL) {
@@ -490,7 +509,7 @@ int write_recipes(char path[], dsh* dshhead) {
     return EXIT_SUCCESS;
 
     while (dshhelp != NULL) {
-        if (!isStringEmpty(dshhelp->receipt) {
+        if (!isStringEmpty(dshhelp->receipt)) {
             fprintf(file, "%s %s\n", dshhelp->name, dshhelp->receipt);
         }
         dshhelp = dshhelp->next;
@@ -504,7 +523,8 @@ int fileOrDirectoryExists(const char* path) {
 
 char** check_for_files(void) {
     char folderName[] = "data";
-    char static filePaths[2][100] = { 0 };
+    static char filePaths[2][100] = { 0 };
+	static char* filePathsPtrs[2] = { filePaths[0], filePaths[1] };
 
     if (!fileOrDirectoryExists(folderName)) {
         if (MKDIR(folderName) == -1) {
@@ -525,7 +545,7 @@ char** check_for_files(void) {
             return NULL;
         }
         fclose(file1);
-        printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[0]);
+        printf("Die Datei '%s' wurde erfolgreich erstellt.\n", filePaths[0]);
     }
 
     if (!fileOrDirectoryExists(filePaths[1])) {
@@ -537,8 +557,7 @@ char** check_for_files(void) {
         fclose(file2);
         printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[1]);
     }
-
-    return (char**)filePaths;
+    return filePathsPtrs;
 }
 
 void debug(dsh* head) {
@@ -564,6 +583,15 @@ void ingdebug(ing* head) {
     return;
 }
 
+void print_recipes(dsh* head){
+	dsh* help = head;
+    while (help != NULL) {
+        printf("Name: %s Recipe: %s\n", help->name, help->receipt);
+		help = help->next;
+    }
+	return;
+}
+
 int main() {
     int status = 1;
     int choice;
@@ -584,12 +612,16 @@ int main() {
     }
     else {
         filePaths = check_for_files();
-        if (filePaths) {
+		if (filePaths == NULL) {
+			printf("Ein Fehler ist bei der Datei-Suche aufgetreten.\n");
+			printf("Beende Programm.\n");
+			return EXIT_FAILURE;
+		} else {
             arr = read_file(filePaths[0], dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
+			read_recipes(filePaths[1], dshhead);
         }
-        else printf("Beende Programm.\n");
     }
 
     while (status == 1) {
@@ -675,14 +707,19 @@ int main() {
 
         case 10:
             status = 0;
-            printf("Beende Programm!\n");
+			printf("Aenderungen werden gespeichert...\n");
+			if(write_file(filePaths[0], dshhead, inghead) == 1) {
+				printf("Es gab einen Fehler beim Beschreiben einer Datei. Ihre Aenderungen wurden nicht gespeichert.\n");
+				printf("Moechten Sie das Programm trotzdem beenden? [Y/N]\n");
+				scanf("%s", cinp);
+				if(strcmp("Y", cinp) == 0) printf("Beende Programm!\n");
+				else if(strcmp("N", cinp) == 0) status = 1;
+				else printf("Ungueltige Eingabe: Programm wird nicht beendet.\n");
+			} else printf("Beende Programm!\n");
             break;
 
         case 11:
-            arr = read_file(path, dshhead, inghead);
-            dshhead = (dsh*)arr[0];
-            inghead = (ing*)arr[1];
-            printf("%s %s\n", dshhead->name, inghead->name);
+			print_recipes(dshhead);
             break;
 
         default:
