@@ -15,8 +15,10 @@
 #ifdef _WIN32
 #include <direct.h>
 #define MKDIR(path) _mkdir(path)
+#define CLEAR_TERMINAL "cls"
 #else
 #define MKDIR(path) mkdir(path, 0700)
+#define CLEAR_TERMINAL "clear"
 #endif
 
 typedef struct dish {
@@ -47,18 +49,22 @@ int isStringEmpty(const char* str) {
 void dishout(dsh* head) {
     dsh* help = head;
     int i = 1, j = 0;
+	printf("---Ihre Gerichte---\n");
     if (help == NULL) {
         printf("Die Liste ist leer!\n");
     }
     for (help = head; help != NULL; help = help->next) {
-        printf("%d: %s, Zutaten: ", i, help->name);
-        if (help->dependencies[j] == NULL) {
-            printf("Keine Angabe ");
+        printf("%d: %s", i, help->name);
+        if (help->dependencies[j] != NULL) {
+            printf(", Zutaten: ");
         }
         for (int j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
-            printf("%s ", help->dependencies[j]->name);
+            printf("%s, ", help->dependencies[j]->name);
         }
-        printf("Rezept: %s\n", help->receipt);
+        if(strlen(help->receipt) > 0){
+			printf("Rezept: %s", help->receipt);
+		}
+		printf("\n");
         i++;
     }
     return;
@@ -67,6 +73,7 @@ void dishout(dsh* head) {
 void ingout(ing* head) {
     ing* help = head;
     int i = 1;
+	printf("---Ihre Zutaten---\n");
     if (help == NULL) {
         printf("Die Liste ist leer!\n");
     }
@@ -317,7 +324,7 @@ int changedishrecipe(dsh* head, char name[]) {
     dsh* help = dishsearch(head, name);
     char recipe[RECEIPTLEN];
 
-    printf("Geben Sie das Rezept ein. Beachten Sie dabei, dass alle Leerstriche mit Unterstrichen ausgetauscht werden müssen!\n");
+    printf("Geben Sie das Rezept ein. Beachten Sie dabei, dass alle Leerstriche mit Unterstrichen ausgetauscht werden mÃ¼ssen!\n");
     scanf("%s", recipe);
 
     if (strcpy(help->receipt, recipe) == NULL) {
@@ -372,7 +379,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
 				status = 0;
             case 2:
                 if (changedishrecipe(dishhead, name) == EXIT_SUCCESS) {
-                    printf("Das Rezept wurde erfolgreich hinzugefügt.\n");
+                    printf("Das Rezept wurde erfolgreich hinzugefuegt.\n");
                     status = 0;
                 }
                 else {
@@ -606,6 +613,8 @@ int main() {
     ing* inghead = NULL;
     ing* inghelp = NULL;
     void** arr;
+	
+	system(CLEAR_TERMINAL);
     printf("Willkommen zum Essensmanager!\n");
     if (!_getcwd(path, sizeof(path))) {
         perror("Fehler beim Auslesen des Pfades.");
@@ -628,18 +637,14 @@ int main() {
     while (status == 1) {
         dshhelp = NULL;
         inghelp = NULL;
-        printf("1)  Gerichte ausgeben\n");
-        printf("2)  Gericht hinzufuegen\n");
-        printf("3)  Gericht loeschen\n");
-        printf("4)  Gericht suchen\n");
-        printf("5)  Gericht bearbeiten\n");
-        printf("6)  Zutaten ausgeben\n");
-        printf("7)  Zutat hinzufuegen\n");
-        printf("8)  Zutat loeschen\n");
-        printf("9)  Zutat suchen\n");
-        printf("10) Programm beenden\n");
-
+		printf("\n");
+        printf("1)  Gerichte ausgeben    6)  Zutaten ausgeben\n");
+        printf("2)  Gericht hinzufuegen  7)  Zutat hinzufuegen\n");
+        printf("3)  Gericht loeschen     8)  Zutat loeschen\n");
+        printf("4)  Gericht suchen       9)  Zutat suchen\n");
+        printf("5)  Gericht bearbeiten   10) Programm beenden\n");
         scanf("%d", &choice);
+		system(CLEAR_TERMINAL);
 
         switch (choice)
         {
