@@ -54,15 +54,15 @@ void dishout(dsh* head) {
         printf("Die Liste ist leer!\n");
     }
     for (help = head; help != NULL; help = help->next) {
-        printf("%d: %s", i, help->name);
+        printf("%d: %s, ", i, help->name);
         if (help->dependencies[j] != NULL) {
-            printf(", Zutaten: ");
+            printf("[Zutaten]: ");
         }
         for (int j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
             printf("%s, ", help->dependencies[j]->name);
         }
         if(strlen(help->receipt) > 0){
-			printf("Rezept: %s", help->receipt);
+			printf("[Rezept]: %s,", help->receipt);
 		}
 		printf("\n");
         i++;
@@ -78,7 +78,7 @@ void ingout(ing* head) {
         printf("Die Liste ist leer!\n");
     }
     while (help != NULL) {
-        printf("%d: %s\n", i, help->name);
+        printf("%d: %s,\n", i, help->name);
         help = help->next;
         i++;
     }
@@ -324,7 +324,7 @@ int changedishrecipe(dsh* head, char name[]) {
     dsh* help = dishsearch(head, name);
     char recipe[RECEIPTLEN];
 
-    printf("Geben Sie das Rezept ein. Beachten Sie dabei, dass alle Leerstriche mit Unterstrichen ausgetauscht werden müssen!\n");
+    printf("Geben Sie das Rezept ein. Beachten Sie dabei, dass alle Leerstriche mit Unterstrichen ausgetauscht werden muessen!\n");
     scanf("%s", recipe);
 
     if (strcpy(help->receipt, recipe) == NULL) {
@@ -367,9 +367,11 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     }
     else {
         while (status) {
+			printf("\n");
             printf("Welche Operation moechten Sie ausfuehren:\n");
             printf("1) Namen aendern\n2) Rezept aendern\n3) Zutat hinzufuegen\n4) Zutat entfernen\n5) Abbrechen\n");
             scanf("%d", &choice);
+			system(CLEAR_TERMINAL);
             switch (choice)
             {
             case 1:
@@ -377,6 +379,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
                 scanf("%s", newname);
                 dishhead = changedishname(dishhead, name, newname);
 				status = 0;
+				break;
             case 2:
                 if (changedishrecipe(dishhead, name) == EXIT_SUCCESS) {
                     printf("Das Rezept wurde erfolgreich hinzugefuegt.\n");
@@ -728,7 +731,7 @@ int main() {
             break;
 
         default:
-            printf("Unbekannte Eingabe!\n");
+            printf("Ungueltige Eingabe!\n");
             break;
         }
     }
