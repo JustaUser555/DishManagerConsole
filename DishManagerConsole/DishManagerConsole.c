@@ -137,18 +137,34 @@ void singledishout(dsh* head, char name[]){
 
 dsh* dishadd(dsh* head, char name[]) {
     dsh* help = head, * temp = NULL, * new;
+	if(dishsearch(head, name) != NULL){
+		printf("Ein Gericht mit dem selben Namen ist bereits vorhanden. Breche ab!\n");
+		return head;
+	}
     if (head == NULL) {
         head = (dsh*)malloc(sizeof(dsh));
+		if(head == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Gericht %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return help;
+		}
         *head = (dsh){ 0 };
         strcpy(head->name, name);
+		printf("Gericht %s erfolgreicht hinzugefuegt.\n", name);
     }
     else if (strcmp(name, head->name) < 0) {
         new = (dsh*)malloc(sizeof(dsh));
+		if(new == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Gericht %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return head;
+		}
         *new = (dsh){ 0 };
         strcpy(new->name, name);
         head->previous = new;
         head = new;
         head->next = help;
+		printf("Gericht %s erfolgreicht hinzugefuegt.\n", name);
     }
     else {
         while (help != NULL && strcmp(name, help->name) > 0) {
@@ -156,6 +172,11 @@ dsh* dishadd(dsh* head, char name[]) {
             help = help->next;
         }
         new = (dsh*)malloc(sizeof(dsh));
+		if(new == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Gericht %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return head;
+		}
         *new = (dsh){ 0 };
         strcpy(new->name, name);
         temp->next = new;
@@ -164,24 +185,41 @@ dsh* dishadd(dsh* head, char name[]) {
             new->next = help;
             help->previous = new;
         }
+		printf("Gericht %s erfolgreicht hinzugefuegt.\n", name);
     }
     return head;
 }
 
 ing* ingadd(ing* head, char name[]) {
     ing* help = head, * temp = NULL, * new;
+	if(ingsearch(head, name) != NULL){
+		printf("Eine Zutat mit dem selben Namen ist bereits vorhanden. Breche ab!\n");
+		return head;
+	}
     if (head == NULL) {
         head = (ing*)malloc(sizeof(ing));
+		if(head == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Zutat %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return help;
+		}
         *head = (ing){ 0 };
         strcpy(head->name, name);
+		printf("Zutat %s erfolgreicht hinzugefuegt.\n", name);
     }
     else if (strcmp(name, head->name) < 0) {
         new = (ing*)malloc(sizeof(ing));
+		if(new == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Zutat %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return head;
+		}
         *new = (ing){ 0 };
         strcpy(new->name, name);
         head->previous = new;
         head = new;
         head->next = help;
+		printf("Zutat %s erfolgreicht hinzugefuegt.\n", name);
     }
     else {
         while (help != NULL && strcmp(name, help->name) > 0) {
@@ -189,6 +227,11 @@ ing* ingadd(ing* head, char name[]) {
             help = help->next;
         }
         new = (ing*)malloc(sizeof(ing));
+		if(new == NULL){
+			perror("Speicherzuweisungsfehler");
+			printf("Zutat %s konnte wegen einem Fehler nicht erstellt werden. Versuchen Sie es noch einmal.\n", name);
+			return head;
+		}
         *new = (ing){ 0 };
         strcpy(new->name, name);
         temp->next = new;
@@ -197,6 +240,7 @@ ing* ingadd(ing* head, char name[]) {
             new->next = help;
             help->previous = new;
         }
+		printf("Zutat %s erfolgreicht hinzugefuegt.\n", name);
     }
     return head;
 }
@@ -297,13 +341,31 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
     return head;
 }
 
+int isingindish(dsh* dishhead, ing* inghead, char dishname[], char ingname[]){
+	dsh* dish = dishsearch(dishhead, dishname);
+	ing* ing = ingsearch(inghead, ingname);
+	
+	if(dish == NULL || ing == NULL) {
+		printf("Ungueltiges Gericht oder ungueltige Zutat. Breche ab!\n");
+		return EXIT_FAILURE;
+	}
+	
+	for(int i = 0; dish->dependencies[i] != NULL; i++){
+		if(strcmp(dish->dependencies[i]->name, ing->name) == 0){
+			printf("Die Zutat %s ist in %s schon vorhanden. Breche ab!\n", ingname, dishname);
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
 int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
     dsh* dshhelp = dishsearch(dshhead, dshname);
     ing* inghelp = ingsearch(inghead, ingname);
     int i = 0;
-    if (inghelp == NULL) {
-        return EXIT_FAILURE;
-    }
+	if(isingindish(dshhead, inghead, dshname, ingname) == EXIT_FAILURE || inghelp == NULL){
+		return EXIT_FAILURE;
+	}
     else {
         for (i = 0; i < DEPSIZE && dshhelp->dependencies[i] != NULL; i++);
         if (i < DEPSIZE && dshhelp->dependencies[i] == NULL) {
@@ -428,7 +490,6 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead, FILE* original_stdout)
                     printf("Zutat %s erfolgreich zu %s hinzugefuegt.\n", ingname, name);
                     status = 0;
                 }
-                else printf("%s konnte nicht hinzugefuegt werden. Kontrollieren Sie, ob diese Zutat vorhanden ist.\n", ingname);
                 break;
 
             case 4:
@@ -437,7 +498,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead, FILE* original_stdout)
                 inghelp = ingsearch(inghead, ingname);
                 check = remingfromdish(dishhead, inghead, name, ingname);
                 if (check == 0) {
-                    printf("%Zutat s erfolgreich von %s entfernt.\n", ingname, name);
+                    printf("Zutat %s erfolgreich von %s entfernt.\n", ingname, name);
                     status = 0;
                 }
                 else printf("%s konnte nicht entfernt werden. Kontrollieren Sie, ob das Gericht mit dieser Zutat schon verbunden ist, oder, ob es diese Zutat ueberhaupt gibt.\n", ingname);
@@ -695,7 +756,6 @@ int main() {
             printf("Wie soll Ihr neues Gericht heissen: ");
             scanf("%s", cinp);
             dshhead = dishadd(dshhead, cinp);
-			printf("Gericht %s erfolgreicht hinzugefuegt.\n", cinp);
             break;
 
         case 3:
@@ -730,7 +790,6 @@ int main() {
             printf("Name der neuen Zutat: ");
             scanf("%s", cinp);
             inghead = ingadd(inghead, cinp);
-			printf("Zutat %s erfolgreich hinzugefuegt.\n", cinp);
             break;
 
         case 8:
@@ -770,6 +829,7 @@ int main() {
 
         default:
             printf("Ungueltige Eingabe!\n");
+			fflush(stdin);
             break;
         }
     }
