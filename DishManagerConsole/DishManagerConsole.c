@@ -442,7 +442,7 @@ dsh* changedishname(dsh* head, char oldname[], char newname[]) {
     return head;
 }
 
-dsh* dishchange(dsh* dishhead, char name[], ing* inghead, FILE* original_stdout) {
+dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     dsh* help = dishhead;
     ing* inghelp = inghead;
     ing* dependencies[DEPSIZE] = { 0 };
@@ -467,9 +467,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead, FILE* original_stdout)
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
-				silence_output();
                 dishhead = changedishname(dishhead, name, newname);
-				restore_output(original_stdout);
 				status = 0;
 				break;
             case 2:
@@ -779,7 +777,7 @@ int main() {
         case 5:
             printf("Welches Gericht moechten Sie bearbeiten: ");
             scanf("%s", cinp);
-            dshhead = dishchange(dshhead, cinp, inghead, original_stdout);
+            dshhead = dishchange(dshhead, cinp, inghead);
             break;
 
         case 6:
