@@ -16,9 +16,11 @@
 #include <direct.h>
 #define MKDIR(path) _mkdir(path)
 #define CLEAR_TERMINAL "cls"
+#define REDIRECT_OUTPUT "NUL"
 #else
 #define MKDIR(path) mkdir(path, 0700)
 #define CLEAR_TERMINAL "clear"
+#define REDIRECT_OUTPUT "/dev/null"
 #endif
 
 typedef struct dish {
@@ -37,6 +39,16 @@ typedef struct ingredient {
 
 //Code
 
+void silence_output(){
+	freopen(REDIRECT_OUTPUT, "w", stdout);
+}
+
+void restore_output(FILE *original_stdout) {
+    fflush(stdout);
+    dup2(fileno(original_stdout), fileno(stdout));
+    setvbuf(stdout, NULL, _IONBF, 0);
+}
+
 void initializeItem(dsh* dish, ing* ingredient) {
     memset(dish, 0, sizeof(dish));
     memset(ingredient, 0, sizeof(ingredient));
@@ -48,17 +60,17 @@ int isStringEmpty(const char* str) {
 
 void dishout(dsh* head) {
     dsh* help = head;
-    int i = 1, j = 0;
+    int i = 1;
 	printf("---Ihre Gerichte---\n");
     if (help == NULL) {
         printf("Die Liste ist leer!\n");
     }
     for (help = head; help != NULL; help = help->next) {
         printf("%d: %s ", i, help->name);
-        if (help->dependencies[j] != NULL) {
+        if (help->dependencies[0] != NULL) {
             printf("[Zutaten] ");
         }
-        for (j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
+        for (int j = 0; help->dependencies[j] != NULL && j < DEPSIZE; j++) {
             printf("%s ", help->dependencies[j]->name);
         }
         if(strlen(help->receipt) > 0){
@@ -108,14 +120,13 @@ ing* ingsearch(ing* head, char name[]) {
 }
 
 void singledishout(dsh* head, char name[]){
-	int i = 0;
 	dsh* help = dishsearch(head, name);	
 	
-	printf("Gefunden: %s ", help->name);
-	if (help->dependencies[i] != NULL) {
+	printf("Gericht gefunden: %s ", help->name);
+	if (help->dependencies[0] != NULL) {
 		printf("[Zutaten] ");
 	}
-	for (i = 0; help->dependencies[i] != NULL && i < DEPSIZE; i++) {
+	for (int i = 0; help->dependencies[i] != NULL && i < DEPSIZE; i++) {
 		printf("%s ", help->dependencies[i]->name);
 	}
 	if(strlen(help->receipt) > 0){
@@ -192,18 +203,23 @@ ing* ingadd(ing* head, char name[]) {
 
 dsh* dishrem(dsh* head, char name[]) {
     dsh* help = NULL, * temp = NULL;
-    if(head != NULL) {
+    if (head == NULL) {
+        printf("Die Liste ist leer, es gibt kein zu loeschendes Gericht!\n");
+    }
+    else {
         help = dishsearch(head, name);
         if (help == head) {
             if (head->next != NULL) {
                 head = head->next;
                 head->previous = NULL;
                 free(help);
+                printf("Gericht %s erfolgreich geloescht.\n", name);
             }
             else {
                 free(help);
                 help = NULL;
                 head = NULL;
+                printf("Gericht %s erfolgreich geloescht, die Liste ist jetzt leer.\n", name);
             }
         }
         else if (help != NULL) {
@@ -214,9 +230,10 @@ dsh* dishrem(dsh* head, char name[]) {
                 temp->previous = help->previous;
             }
             free(help);
+            printf("Gericht %s erfolgreich geloescht.\n", name);
         }
         else {
-            printf("Das gesuchte Gericht konnte nicht gefunden werden!\n");
+            printf("Das Gericht %s konnte nicht gefunden werden!\n", name);
         }
     }
     return head;
@@ -242,7 +259,10 @@ int ingremfromeverydish(dsh* dshhead, ing* ingredient){
 
 ing* ingrem(ing* head, char name[], dsh* dshhead) {
     ing* help = NULL, * temp = NULL;
-	if(head != NULL){
+    if (head == NULL) {
+        printf("Die Liste ist leer, es gibt keine zu loeschende Zutat!\n");
+    }
+    else {
         help = ingsearch(head, name);
         if (help == head) {
             ingremfromeverydish(dshhead, help);
@@ -250,11 +270,13 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
                 head = head->next;
                 head->previous = NULL;
                 free(help);
+                printf("Zutat %s erfolgreich geloescht.\n", name);
             }
             else {
                 free(help);
                 help = NULL;
                 head = NULL;
+                printf("Zutat %s erfolgreich geloescht, die Liste ist jetzt leer.\n", name);
             }
         }
         else if (help != NULL) {
@@ -266,9 +288,10 @@ ing* ingrem(ing* head, char name[], dsh* dshhead) {
                 temp->previous = help->previous;
             }
             free(help);
+            printf("Zutat %s erfolgreich geloescht.\n", name);
         }
         else {
-            printf("Die gesuchte Zutat konnte nicht gefunden werden!\n");
+            printf("Die Zutat %s konnte nicht gefunden werden!\n", name);
         }
     }
     return head;
@@ -329,7 +352,7 @@ int changedishrecipe(dsh* head, char name[]) {
     dsh* help = dishsearch(head, name);
     char recipe[RECEIPTLEN];
 
-    printf("Beachten Sie, dass alle Leerstriche mit Unterstrichen ausgetauscht werden muessen:");
+    printf("Beachten Sie, dass alle Leerstriche mit Unterstrichen ausgetauscht werden muessen: ");
     scanf("%s", recipe);
 
     if (strcpy(help->receipt, recipe) == NULL) {
@@ -357,7 +380,7 @@ dsh* changedishname(dsh* head, char oldname[], char newname[]) {
     return head;
 }
 
-dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
+dsh* dishchange(dsh* dishhead, char name[], ing* inghead, FILE* original_stdout) {
     dsh* help = dishhead;
     ing* inghelp = inghead;
     ing* dependencies[DEPSIZE] = { 0 };
@@ -382,7 +405,9 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
+				silence_output();
                 dishhead = changedishname(dishhead, name, newname);
+				restore_output(original_stdout);
 				status = 0;
 				break;
             case 2:
@@ -400,7 +425,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
                 scanf("%s", ingname);
                 check = addingtodish(dishhead, inghead, name, ingname);
                 if (check == 0) {
-                    printf("%s erfolgreich zu %s hinzugefuegt.\n", ingname, name);
+                    printf("Zutat %s erfolgreich zu %s hinzugefuegt.\n", ingname, name);
                     status = 0;
                 }
                 else printf("%s konnte nicht hinzugefuegt werden. Kontrollieren Sie, ob diese Zutat vorhanden ist.\n", ingname);
@@ -412,7 +437,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
                 inghelp = ingsearch(inghead, ingname);
                 check = remingfromdish(dishhead, inghead, name, ingname);
                 if (check == 0) {
-                    printf("%s erfolgreich von %s entfernt.\n", ingname, name);
+                    printf("%Zutat s erfolgreich von %s entfernt.\n", ingname, name);
                     status = 0;
                 }
                 else printf("%s konnte nicht entfernt werden. Kontrollieren Sie, ob das Gericht mit dieser Zutat schon verbunden ist, oder, ob es diese Zutat ueberhaupt gibt.\n", ingname);
@@ -572,7 +597,7 @@ char** check_for_files(void) {
             return NULL;
         }
         fclose(file2);
-        printf("Die Datei '%s' wuirde erfolgreich erstellt.\n", filePaths[1]);
+        printf("Die Datei '%s' wurde erfolgreich erstellt.\n", filePaths[1]);
     }
     return filePathsPtrs;
 }
@@ -622,6 +647,7 @@ int main() {
     ing* inghead = NULL;
     ing* inghelp = NULL;
     void** arr;
+	FILE* original_stdout = fdopen(dup(fileno(stdout)), "w");
 	
 	system(CLEAR_TERMINAL);
     printf("Willkommen zum Essensmanager!\n");
@@ -636,10 +662,14 @@ int main() {
 			printf("Beende Programm.\n");
 			return EXIT_FAILURE;
 		} else {
+			silence_output();
+			
             arr = read_file(filePaths[0], dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
 			read_recipes(filePaths[1], dshhead);
+			
+			restore_output(original_stdout);
         }
     }
 
@@ -669,14 +699,9 @@ int main() {
             break;
 
         case 3:
-			if(dshhead == NULL){
-				printf("Die Liste ist leer! Es gibt kein zu loeschendes Gericht!\n");
-				break;
-			}
             printf("Welches Gericht soll geloescht werden: ");
             scanf("%s", cinp);
             dshhead = dishrem(dshhead, cinp);
-			printf("Gericht %s erfolgreicht geloescht.\n", cinp);
             break;
 
         case 4:
@@ -694,7 +719,7 @@ int main() {
         case 5:
             printf("Welches Gericht moechten Sie bearbeiten: ");
             scanf("%s", cinp);
-            dshhead = dishchange(dshhead, cinp, inghead);
+            dshhead = dishchange(dshhead, cinp, inghead, original_stdout);
             break;
 
         case 6:
@@ -709,14 +734,9 @@ int main() {
             break;
 
         case 8:
-			if(inghead == NULL){
-				printf("Die Liste ist leer! Es gibt keine zu loeschende Zutat!\n");
-				break;
-			}
             printf("Welche Zutat soll geloescht werden: ");
             scanf("%s", cinp);
             inghead = ingrem(inghead, cinp, dshhead);
-			printf("Zutat %s erfolgreich geloescht.\n", cinp);
             break;
 
         case 9:
@@ -724,7 +744,7 @@ int main() {
             scanf("%s", cinp);
             inghelp = ingsearch(inghead, cinp);
             if (inghelp != NULL) {
-                printf("Gefunden: %s\n", inghelp->name);
+                printf("Zutat gefunden: %s\n", inghelp->name);
             }
             else {
                 printf("Es konnte keine Zutat mit diesem Namen gefunden werden!\n");
