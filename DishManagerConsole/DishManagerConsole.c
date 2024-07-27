@@ -427,24 +427,6 @@ int changedishrecipe(dsh* head, char name[]) {
 }
 
 dsh* changedishname(dsh* head, char oldname[], char newname[]) {
-    char receipt[RECEIPTLEN] = { 0 };
-    ing* dependencies[DEPSIZE] = { 0 };
-    dsh* help = dishsearch(head, oldname);
-    for (int i = 0; help->dependencies[i] != NULL && i < DEPSIZE; i++) {
-        dependencies[i] = help->dependencies[i];
-    }
-    strcpy(receipt, help->receipt);
-    head = dishrem(head, oldname);
-    head = dishadd(head, newname);
-    help = dishsearch(head, newname);
-    for (int i = 0; dependencies[i] != NULL && i < DEPSIZE; i++) {
-        help->dependencies[i] = dependencies[i];
-    }
-    strcpy(help->receipt, receipt);
-    return head;
-}
-
-dsh* changedishname2(dsh* head, char oldname[], char newname[]) {
     dsh *old, *new, *help;
     if (dishsearch(head, newname)) {
         printf("Eine Zutat mit dem selben Namen ist bereits vorhanden. Breche ab!\n");
@@ -486,7 +468,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
-                dishhead = changedishname2(dishhead, name, newname);
+                dishhead = changedishname(dishhead, name, newname);
 				status = 0;
 				break;
             case 2:
