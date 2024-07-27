@@ -17,10 +17,12 @@
 #define MKDIR(path) _mkdir(path)
 #define CLEAR_TERMINAL "cls"
 #define REDIRECT_OUTPUT "NUL"
+#define FILENO _fileno
 #else
 #define MKDIR(path) mkdir(path, 0700)
 #define CLEAR_TERMINAL "clear"
 #define REDIRECT_OUTPUT "/dev/null"
+#define FILENO fileno
 #endif
 
 typedef struct dish {
@@ -45,7 +47,7 @@ void silence_output(){
 
 void restore_output(FILE *original_stdout) {
     fflush(stdout);
-    dup2(fileno(original_stdout), fileno(stdout));
+    dup2(FILENO(original_stdout), FILENO(stdout));
     setvbuf(stdout, NULL, _IONBF, 0);
 }
 
@@ -442,6 +444,23 @@ dsh* changedishname(dsh* head, char oldname[], char newname[]) {
     return head;
 }
 
+dsh* changedishname2(dsh* head, char oldname[], char newname[]) {
+    dsh *old, *new, *help;
+    if (dishsearch(head, newname)) {
+        printf("Eine Zutat mit dem selben Namen ist bereits vorhanden. Breche ab!\n");
+        return head;
+    }
+    head = dishadd(head, newname);
+    new = dishsearch(head, newname);
+    old = dishsearch(head, oldname);
+    for (int i = 0; old->dependencies[i] != NULL && i < DEPSIZE; i++) {
+        new->dependencies[i] = old->dependencies[i];
+    }
+    strcpy(new->receipt, old->receipt);
+    head = dishrem(head, oldname);
+    return head;
+}
+
 dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
     dsh* help = dishhead;
     ing* inghelp = inghead;
@@ -467,7 +486,7 @@ dsh* dishchange(dsh* dishhead, char name[], ing* inghead) {
             case 1:
                 printf("Geben Sie den neuen Namen ein: ");
                 scanf("%s", newname);
-                dishhead = changedishname(dishhead, name, newname);
+                dishhead = changedishname2(dishhead, name, newname);
 				status = 0;
 				break;
             case 2:
@@ -706,13 +725,14 @@ int main() {
     ing* inghead = NULL;
     ing* inghelp = NULL;
     void** arr;
-	FILE* original_stdout = fdopen(dup(fileno(stdout)), "w");
+	FILE* original_stdout = fdopen(dup(FILENO(stdout)), "w");
 	
 	system(CLEAR_TERMINAL);
     printf("Willkommen zum Essensmanager!\n");
     if (!_getcwd(path, sizeof(path))) {
         perror("Fehler beim Auslesen des Pfades.");
         printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
+        return EXIT_FAILURE;
     }
     else {
         filePaths = check_for_files();
