@@ -18,11 +18,16 @@
 #define CLEAR_TERMINAL "cls"
 #define REDIRECT_OUTPUT "NUL"
 #define FILENO _fileno
+#define GETCWD _getcwd
+#define PATH_SEPARATOR "\\"
 #else
+#include <unistd.h>
 #define MKDIR(path) mkdir(path, 0700)
 #define CLEAR_TERMINAL "clear"
 #define REDIRECT_OUTPUT "/dev/null"
 #define FILENO fileno
+#define GETCWD getcwd
+#define PATH_SEPARATOR "/"
 #endif
 
 typedef struct dish {
@@ -637,8 +642,8 @@ char** check_for_files(void) {
         printf("Der Daten-Ordner '%s' wurde erfolgreich erstellt.\n", folderName);
     }
 
-    snprintf(filePaths[0], sizeof(filePaths[0]), "%s\\dishes_and_ingredients.txt", folderName);
-    snprintf(filePaths[1], sizeof(filePaths[1]), "%s\\recipes.txt", folderName);
+    snprintf(filePaths[0], sizeof(filePaths[0]), "%s%s%s", folderName, PATH_SEPARATOR, "dishes_and_ingredients.txt");
+    snprintf(filePaths[1], sizeof(filePaths[1]), "%s%s%s", folderName, PATH_SEPARATOR, "recipes.txt");
 
     if (!fileOrDirectoryExists(filePaths[0])) {
         FILE* file1 = fopen(filePaths[0], "w");
@@ -711,7 +716,7 @@ int main() {
 	
 	system(CLEAR_TERMINAL);
     printf("Willkommen zum Essensmanager!\n");
-    if (!_getcwd(path, sizeof(path))) {
+    if (!GETCWD(path, sizeof(path))) {
         perror("Fehler beim Auslesen des Pfades.");
         printf("Moeglicherweise wird das Programm in einem schreibgeschuetztem Ordner ausgefuehrt. Verschieben Sie das Programm in einem anderen Ordner oder starten Sie es mit Administratorrechten.\n");
         return EXIT_FAILURE;
