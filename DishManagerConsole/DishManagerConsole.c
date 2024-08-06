@@ -530,7 +530,7 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
         perror("Fehler beim Oeffnen der Datei");
         return NULL;
     }
-
+    int StatusCode = EXIT_SUCCESS;
     char name[NAMELEN] = "";
     char option[NAMELEN] = "";
     char temp[NAMELEN] = "";
@@ -543,13 +543,16 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
             strcpy(temp, name);
         }
         else if (strcmp(option, "D_Dependency") == 0) {
-            addingtodish(dishhead, inghead, temp, name);
+            if (addingtodish(dishhead, inghead, temp, name) == EXIT_FAILURE) {
+                StatusCode = EXIT_FAILURE;
+            }
         }
     }
 	
-    static void* arr[2];
+    static void* arr[3];
     arr[0] = dishhead;
     arr[1] = inghead;
+    arr[2] = StatusCode;
     fclose(file);
     return arr;
 }
@@ -706,6 +709,7 @@ int main() {
     int choice;
     int inp, inp2;
     int check;
+    int OperationStatusCode = EXIT_SUCCESS;
     char cinp[NAMELEN], cinp2[NAMELEN];
     char path[MAXLINELENGTH];
     char** filePaths;
@@ -735,9 +739,15 @@ int main() {
             arr = read_file(filePaths[0], dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
+            OperationStatusCode = (int)arr[2];
+
 			read_recipes(filePaths[1], dshhead);
 			
 			restore_output(original_stdout);
+
+            if (OperationStatusCode == EXIT_FAILURE) {
+                printf("Es gab beim Auslesen ihrer Dateien Fehler.\n");
+            }
         }
     }
 
