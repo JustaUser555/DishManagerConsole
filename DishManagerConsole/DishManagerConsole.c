@@ -371,6 +371,7 @@ int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
     ing* inghelp = ingsearch(inghead, ingname);
     int i = 0;
 	if(isingindish(dshhead, inghead, dshname, ingname) == EXIT_FAILURE || inghelp == NULL){
+		printf("Die Zutat %s konnte nicht hinzugefuegt werden, da sie entweder im Gericht schon vorhanden ist, oder sie es gar nicht gibt.\n", inghelp->name);
 		return EXIT_FAILURE;
 	}
     else {
@@ -379,6 +380,7 @@ int addingtodish(dsh* dshhead, ing* inghead, char dshname[], char ingname[]) {
             dshhelp->dependencies[i] = inghelp;
         }
         else {
+			printf("Die Zutat %s konnte wegen eines unbekannten Fehlers nicht hinzugefuegt werden. Vergewissern Sie sich, dass ihr Gericht %s die maximale Anzahl von %d Zutaten nicht erreicht hat.\n", inghelp->name, dshhelp->name, DEPSIZE);
             return EXIT_FAILURE;
         }
     }
