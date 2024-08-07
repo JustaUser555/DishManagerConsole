@@ -530,7 +530,8 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
         perror("Fehler beim Oeffnen der Datei");
         return NULL;
     }
-    int StatusCode = EXIT_SUCCESS;
+	int StatusCode = EXIT_SUCCESS;
+    int* StatusCodePtr = &StatusCode;
     char name[NAMELEN] = "";
     char option[NAMELEN] = "";
     char temp[NAMELEN] = "";
@@ -544,7 +545,7 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
         }
         else if (strcmp(option, "D_Dependency") == 0) {
             if (addingtodish(dishhead, inghead, temp, name) == EXIT_FAILURE) {
-                StatusCode = EXIT_FAILURE;
+                *StatusCodePtr = EXIT_FAILURE;
             }
         }
     }
@@ -552,7 +553,7 @@ void** read_file(char path[], dsh* dishhead, ing* inghead) {
     static void* arr[3];
     arr[0] = dishhead;
     arr[1] = inghead;
-    arr[2] = StatusCode;
+    arr[2] = StatusCodePtr;
     fclose(file);
     return arr;
 }
@@ -739,7 +740,7 @@ int main() {
             arr = read_file(filePaths[0], dshhead, inghead);
             dshhead = (dsh*)arr[0];
             inghead = (ing*)arr[1];
-            OperationStatusCode = (int)arr[2];
+            OperationStatusCode = *(int*)arr[2];
 
 			read_recipes(filePaths[1], dshhead);
 			
